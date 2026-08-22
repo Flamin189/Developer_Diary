@@ -21,10 +21,27 @@ load_dotenv()
 
 DATABASE_URL=os.getenv("DATABASE_URL")
 SECRET_KEY=os.getenv("SECRET_KEY","developer-diary-development-secret")
-FRONTEND_URL=os.getenv("FRONTEND_URL","http://127.0.0.1:5500")
+APP_ENV=os.getenv("APP_ENV","production").strip().lower()
+
+# Cloudflare Pages frontend.
+# Keep FRONTEND_URL in Render environment variables so it can be changed
+# without modifying the source code.
+FRONTEND_URL=os.getenv(
+    "FRONTEND_URL",
+    "https://developer-diary.pages.dev"
+).rstrip("/")
+
+# Explicit Google OAuth callback for Render.
+# Recommended Render value:
+# https://developer-diary.onrender.com/api/auth/google/callback
+GOOGLE_REDIRECT_URI=os.getenv("GOOGLE_REDIRECT_URI","").strip()
 
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is missing from .env")
+    raise RuntimeError("DATABASE_URL is missing from environment variables")
+
+if not SECRET_KEY or SECRET_KEY=="developer-diary-development-secret":
+    if APP_ENV=="production":
+        raise RuntimeError("SECRET_KEY must be set to a strong value in production")
 
 engine=create_engine(DATABASE_URL,pool_pre_ping=True)
 SessionLocal=sessionmaker(bind=engine,autoflush=False,autocommit=False)
@@ -116,7 +133,7 @@ class NoteCreate(BaseModel):
     title:str=Field(...,min_length=1,max_length=200)
     category:str="GENERAL"
     content:str=Field(...,min_length=1)
-    tags:list[str]=[]
+    tags:list[str]=Field(default_factory=list)
     is_pinned:bool=False
 
 class NoteUpdate(BaseModel):
@@ -262,15 +279,30 @@ app.add_middleware(
     secret_key=SECRET_KEY,
     max_age=600,
     same_site="lax",
-    https_only=False
+    https_only=(APP_ENV=="production")
 )
+
+configured_origins=os.getenv("CORS_ORIGINS","").strip()
+
+if configured_origins:
+    ALLOWED_ORIGINS=[
+        origin.strip().rstrip("/")
+        for origin in configured_origins.split(",")
+        if origin.strip()
+    ]
+else:
+    ALLOWED_ORIGINS=[
+        FRONTEND_URL,
+        "http://127.0.0.1:5500",
+        "http://localhost:5500"
+    ]
+
+# Remove duplicates while preserving order.
+ALLOWED_ORIGINS=list(dict.fromkeys(ALLOWED_ORIGINS))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -278,7 +310,11 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message":"Developer Diary API is running","version":"2.0.0"}
+    return {
+        "message":"Developer Diary API is running",
+        "version":"2.0.0",
+        "environment":APP_ENV
+    }
 
 @app.get("/api/health")
 def health():
@@ -347,7 +383,7 @@ def get_profile(user:User=Depends(get_current_user)):
 
 @app.get("/api/auth/google")
 async def google_login(request:Request):
-    redirect_uri=request.url_for("google_callback")
+    redirect_uri=GOOGLE_REDIRECT_URI or str(request.url_for("google_callback"))
     return await oauth.google.authorize_redirect(request,redirect_uri)
 
 @app.get("/api/auth/google/callback",name="google_callback")
