@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Developer Diary - notes and daily tasks for developers">
+<title>Developer Diary</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c222b;--surface3:#242b35;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--primary:#6c8cff;--primaryHover:#829dff;--danger:#f06a6a;--success:#56d364;--warning:#e6b85c;--radius:12px;--shadow:0 15px 40px rgba(0,0,0,.35);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.hidden{display:none!important}
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;background:radial-gradient(circle at 50% 0,rgba(108,140,255,.12),transparent 40%)}
+.auth-container{width:min(430px,100%)}
+.auth-brand{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text);font-size:22px;font-weight:700;margin-bottom:25px}
+.brand-mark{width:38px;height:38px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:white;font-weight:800}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:30px;box-shadow:var(--shadow)}
+.auth-card h1{text-align:center;font-size:25px;margin-bottom:6px}
+.auth-subtitle{text-align:center;color:var(--muted);font-size:13px;margin-bottom:25px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface2);border:1px solid var(--border);padding:4px;border-radius:9px;margin-bottom:22px}
+.auth-tab{border:0;background:transparent;color:var(--muted);padding:9px;border-radius:6px}
+.auth-tab.active{background:var(--surface3);color:var(--text);font-weight:600}
+.auth-form{display:flex;flex-direction:column;gap:15px}
+.form-group{margin-bottom:0}
+.form-group label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+.form-group input,.form-group textarea,.form-group select{width:100%;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;padding:10px 12px;outline:none}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,140,255,.12)}
+.form-error{color:var(--danger);font-size:12px;min-height:18px}
+.auth-submit{width:100%;border:1px solid var(--primary);background:var(--primary);color:white;border-radius:8px;padding:11px;font-weight:600}
+.auth-submit:hover{background:var(--primaryHover)}
+.auth-submit:disabled{opacity:.6;cursor:not-allowed}
+.auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:20px 0}
+.auth-divider::before,.auth-divider::after{content:"";height:1px;background:var(--border);flex:1}
+.google-button{width:100%;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;gap:9px}
+.google-button:hover{background:var(--surface3)}
+.google-icon{width:18px;height:18px;border-radius:50%;background:white;color:#4285f4;display:grid;place-items:center;font-size:11px;font-weight:800}
+.auth-note{text-align:center;color:var(--muted);font-size:11px;margin-top:20px}
+.topbar{height:64px;border-bottom:1px solid var(--border);background:rgba(13,17,23,.94);position:sticky;top:0;z-index:100}
+.topbar-inner{width:min(1400px,calc(100% - 40px));height:100%;margin:auto;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-size:18px;font-weight:700}
+.brand-mark-small{width:32px;height:32px;border-radius:8px;background:var(--primary);display:grid;place-items:center;color:white;font-weight:800}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.button,.icon-button,.navigation-button,.small-button,.close-button{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;transition:.2s}
+.button{padding:9px 15px}
+.button:hover,.icon-button:hover,.navigation-button:hover,.small-button:hover{background:var(--surface3);border-color:#48515d}
+.button.primary,.small-button.primary{background:var(--primary);border-color:var(--primary);color:white}
+.button.primary:hover,.small-button.primary:hover{background:var(--primaryHover);border-color:var(--primaryHover)}
+.button.secondary{background:var(--surface)}
+.icon-button{width:38px;height:38px}
+.user-menu{display:flex;align-items:center;gap:8px}
+.user-name{font-size:12px;color:var(--muted);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-badge{width:32px;height:32px;border-radius:50%;background:var(--surface3);display:grid;place-items:center;font-size:13px}
+.container{width:min(1400px,calc(100% - 40px));margin:auto}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:35px 0 25px}
+.eyebrow{font-size:11px;color:var(--primary);font-weight:700;letter-spacing:.12em;margin-bottom:5px}
+.page-header h1{font-size:30px;line-height:1.2}
+.page-header p:not(.eyebrow){color:var(--muted);margin-top:5px}
+.header-actions{display:flex;gap:8px}
+.week-navigation{display:flex;align-items:center;gap:8px;margin-bottom:25px}
+.navigation-button{width:40px;height:40px;flex-shrink:0}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;flex:1}
+.day-card{min-height:130px;padding:14px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--text);text-align:left;position:relative;transition:.2s}
+.day-card:hover{border-color:#4a5360;transform:translateY(-2px)}
+.day-card.today{border-color:var(--primary)}
+.day-card.selected{background:rgba(108,140,255,.08);box-shadow:0 0 0 1px rgba(108,140,255,.15)}
+.day-name{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.day-number{display:block;font-size:27px;font-weight:700;margin-top:5px}
+.day-month{display:block;color:var(--muted);font-size:12px}
+.day-today{position:absolute;right:9px;top:9px;font-size:9px;color:var(--primary);font-weight:700}
+.day-indicators{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+.day-indicator{font-size:10px;padding:3px 5px;border-radius:5px;background:var(--surface3);color:var(--muted)}
+.workspace{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;padding-bottom:60px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-width:0}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}
+.panel-header h2{font-size:18px}
+.panel-header p{font-size:12px;color:var(--muted);margin-top:2px}
+.notes-list,.task-list{display:flex;flex-direction:column;gap:10px}
+.note{border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:15px}
+.note-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.note-title{font-weight:600;font-size:15px}
+.note-category{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:600;white-space:nowrap}
+.category-general{color:#aeb5c2;background:rgba(174,181,194,.08)}
+.category-learning{color:#65b8ff;background:rgba(101,184,255,.1)}
+.category-bug{color:#ef7474;background:rgba(239,116,116,.1)}
+.category-idea{color:#e6b85c;background:rgba(230,184,92,.1)}
+.category-code{color:#6cdd91;background:rgba(108,221,145,.1)}
+.category-meeting{color:#b18cff;background:rgba(177,140,255,.1)}
+.category-project{color:#ff9b67;background:rgba(255,155,103,.1)}
+.category-interview{color:#7dd3fc;background:rgba(125,211,252,.1)}
+.category-achievement{color:#facc15;background:rgba(250,204,21,.1)}
+.category-problem{color:#fb7185;background:rgba(251,113,133,.1)}
+.category-solution{color:#4ade80;background:rgba(74,222,128,.1)}
+.note-content{white-space:pre-wrap;color:#c7ced8;font-size:13px;margin-top:10px}
+.note-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:13px;color:var(--muted);font-size:11px}
+.tag{background:var(--surface3);padding:3px 6px;border-radius:5px}
+.note-time{margin-left:auto}
+.note-actions{display:flex;gap:5px;margin-left:8px}
+.note-action{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:5px;padding:3px 7px;font-size:11px}
+.note-action:hover{color:var(--text);background:var(--surface3)}
+.note-action.delete:hover{color:var(--danger)}
+.pin-active{color:var(--warning)!important;border-color:rgba(230,184,92,.3)}
+.task-progress{margin-bottom:17px}
+.progress-info{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.progress-bar{height:6px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--primary);width:0;transition:width .25s}
+.task-list{display:flex;flex-direction:column;gap:8px}
+.task{display:flex;align-items:flex-start;gap:10px;padding:11px;border:1px solid var(--border);background:var(--surface2);border-radius:8px}
+.task-checkbox{width:17px;height:17px;margin-top:2px;accent-color:var(--primary);flex-shrink:0}
+.task-title{flex:1;font-size:13px}
+.task.completed .task-title{text-decoration:line-through;color:var(--muted)}
+.task-delete{border:0;background:transparent;color:var(--muted);font-size:16px}
+.task-delete:hover{color:var(--danger)}
+.empty-state{text-align:center;color:var(--muted);padding:40px 15px;font-size:13px;border:1px dashed var(--border);border-radius:9px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.modal{width:min(650px,100%);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:19px 20px;border-bottom:1px solid var(--border)}
+.modal-header h2{font-size:18px}
+.modal-header p{font-size:12px;color:var(--muted);margin-top:3px}
+.close-button{border:0;background:transparent;color:var(--muted);font-size:23px;line-height:1;padding:0 3px}
+.close-button:hover{color:var(--text)}
+.modal-body{padding:20px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:15px 20px;border-top:1px solid var(--border)}
+.modal-form{display:flex;flex-direction:column;gap:15px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:16px}
+.form-group:last-child{margin-bottom:0}
+.form-group label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+.form-group input,.form-group textarea,.form-group select{width:100%;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;padding:10px 12px;outline:none}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,140,255,.12)}
+.form-group textarea{min-height:200px;resize:vertical}
+.optional{font-size:11px}
+.input-help{font-size:10px;color:var(--muted);margin-top:4px}
+.category-preview{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;margin-top:-5px;margin-bottom:16px}
+.calendar-navigation{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.calendar-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center;margin-bottom:5px}
+.calendar-weekdays span{font-size:11px;color:var(--muted);padding:7px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.calendar-day{height:42px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text)}
+.calendar-day:hover:not(:disabled){background:var(--surface3)}
+.calendar-day.today{border-color:var(--primary)}
+.calendar-day.selected{background:var(--primary);color:white}
+.calendar-day.other-month{color:#454d58}
+.search-bar{display:flex;gap:8px;margin-bottom:18px}
+.search-input{flex:1;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;padding:10px 12px;outline:none}
+.search-input:focus{border-color:var(--primary)}
+.search-results{display:flex;flex-direction:column;gap:10px}
+.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px}
+.stat-label{font-size:11px;color:var(--muted)}
+.stat-value{font-size:27px;font-weight:700;margin-top:5px}
+.stat-description{font-size:10px;color:var(--muted);margin-top:3px}
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th,.admin-table td{text-align:left;padding:11px;border-bottom:1px solid var(--border);font-size:12px}
+.admin-table th{color:var(--muted);font-weight:500}
+.status-badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:10px}
+.status-active{color:var(--success);background:rgba(86,211,100,.1)}
+.status-disabled{color:var(--danger);background:rgba(240,106,106,.1)}
+.toast-container{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:3000}
+.toast{background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:12px 15px;min-width:260px;box-shadow:var(--shadow);font-size:13px;animation:toastIn .2s ease}
+.toast.success{border-left:3px solid var(--success)}
+.toast.error{border-left:3px solid var(--danger)}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1000px){.week-grid{grid-template-columns:repeat(4,1fr)}.workspace{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.week-grid{display:flex;overflow-x:auto}.day-card{min-width:145px}.user-name{display:none}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="authPage" class="auth-page">
+<div class="auth-container">
+<div class="auth-brand"><span class="brand-mark">&lt;/&gt;</span><span>Developer Diary</span></div>
+<div class="auth-card">
+<div class="auth-tabs">
+<button class="auth-tab active" id="loginTab">Sign In</button>
+<button class="auth-tab" id="registerTab">Create Account</button>
+</div>
+<div id="loginForm">
+<h1>Welcome back</h1>
+<p class="auth-subtitle">Continue your developer journey.</p>
+<form class="auth-form" id="loginFormElement">
+<div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" placeholder="you@example.com" required></div>
+<div class="form-group"><label for="loginPassword">Password</label><input type="password" id="loginPassword" placeholder="Your password" required></div>
+<div class="form-error" id="loginError"></div>
+<button class="auth-submit" id="loginSubmit" type="submit">Sign In</button>
+</form>
+<div class="auth-divider">OR</div>
+<button class="google-button" id="googleLoginBtn" type="button"><span class="google-icon">G</span> Continue with Google</button>
+<p class="auth-note">Your developer notes stay associated with your account.</p>
+</div>
+<div id="registerForm" class="hidden">
+<h1>Create your diary</h1>
+<p class="auth-subtitle">Start recording your developer journey.</p>
+<form class="auth-form" id="registerFormElement">
+<div class="form-group"><label for="registerName">Name</label><input type="text" id="registerName" placeholder="Your name" required minlength="2"></div>
+<div class="form-group"><label for="registerEmail">Email</label><input type="email" id="registerEmail" placeholder="you@example.com" required></div>
+<div class="form-group"><label for="registerPassword">Password</label><input type="password" id="registerPassword" placeholder="At least 6 characters" required minlength="6"></div>
+<div class="form-group"><label for="registerPasswordConfirm">Confirm Password</label><input type="password" id="registerPasswordConfirm" placeholder="Repeat your password" required minlength="6"></div>
+<div class="form-error" id="registerError"></div>
+<button class="auth-submit" id="registerSubmit" type="submit">Create Account</button>
+</form>
+<div class="auth-divider">OR</div>
+<button class="google-button" id="googleRegisterBtn" type="button"><span class="google-icon">G</span> Sign up with Google</button>
+<p class="auth-note">Create one account and access your diary anywhere.</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="appPage" class="hidden">
+<header class="topbar">
+<div class="topbar-inner">
+<a href="#" class="brand" id="brandHome"><span class="brand-mark-small">&lt;/&gt;</span><span>Developer Diary</span></a>
+<div class="topbar-actions">
+<button class="button secondary" id="dashboardBtn">Dashboard</button>
+<button class="button secondary" id="searchBtn">Search</button>
+<button class="button secondary" id="calendarBtn">📅 Calendar</button>
+<button class="button primary" id="newNoteBtn">+ New Note</button>
+<div class="user-menu">
+<span class="user-name" id="userName"></span>
+<div class="user-badge" id="userBadge">D</div>
+<button class="icon-button" id="logoutBtn" title="Sign out">↪</button>
+</div>
+</div>
+</div>
+</header>
+
+<main class="container">
+<section id="diaryView">
+<section class="page-header">
+<div>
+<p class="eyebrow">DEVELOPER WORKSPACE</p>
+<h1 id="pageTitle">Today</h1>
+<p id="selectedDateText"></p>
+</div>
+<div class="header-actions">
+<button class="button secondary" id="todayBtn">Today</button>
+<button class="button primary" id="newTaskBtn">+ Add Task</button>
+</div>
+</section>
+
+<section class="week-navigation">
+<button class="navigation-button" id="previousWeekBtn" aria-label="Previous week">‹</button>
+<div class="week-grid" id="weekGrid"></div>
+<button class="navigation-button" id="nextWeekBtn" aria-label="Next week">›</button>
+</section>
+
+<section class="workspace">
+<div class="panel">
+<div class="panel-header">
+<div><h2>Notes</h2><p id="notesSubtitle">Notes for the selected day</p></div>
+<button class="small-button primary" id="panelNewNoteBtn">+ Note</button>
+</div>
+<div class="notes-list" id="notesList"></div>
+</div>
+
+<div class="panel">
+<div class="panel-header">
+<div><h2>Task List</h2><p id="tasksSubtitle">Tasks for the selected day</p></div>
+<button class="small-button primary" id="panelNewTaskBtn">+ Task</button>
+</div>
+<div class="task-progress">
+<div class="progress-info"><span id="taskProgressText">0 of 0 completed</span><span id="taskProgressPercent">0%</span></div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+<div class="task-list" id="taskList"></div>
+</div>
+</section>
+</section>
+
+<section id="dashboardView" class="hidden">
+<section class="page-header">
+<div><p class="eyebrow">DEVELOPER ANALYTICS</p><h1>Dashboard</h1><p>Your development activity at a glance.</p></div>
+<div class="header-actions"><button class="button secondary" id="dashboardTodayBtn">Back to Diary</button></div>
+</section>
+<div class="dashboard-grid">
+<div class="stat-card"><div class="stat-label">TOTAL NOTES</div><div class="stat-value" id="statNotes">0</div><div class="stat-description">Active notes</div></div>
+<div class="stat-card"><div class="stat-label">PINNED NOTES</div><div class="stat-value" id="statPinned">0</div><div class="stat-description">Important notes</div></div>
+<div class="stat-card"><div class="stat-label">TOTAL TASKS</div><div class="stat-value" id="statTasks">0</div><div class="stat-description">All tasks</div></div>
+<div class="stat-card"><div class="stat-label">COMPLETED</div><div class="stat-value" id="statCompleted">0</div><div class="stat-description">Completed tasks</div></div>
+<div class="stat-card"><div class="stat-label">PENDING</div><div class="stat-value" id="statPending">0</div><div class="stat-description">Tasks remaining</div></div>
+<div class="stat-card"><div class="stat-label">LEARNING</div><div class="stat-value" id="statLearning">0</div><div class="stat-description">Learning notes</div></div>
+<div class="stat-card"><div class="stat-label">BUGS</div><div class="stat-value" id="statBugs">0</div><div class="stat-description">Bug notes</div></div>
+<div class="stat-card"><div class="stat-label">PROJECTS</div><div class="stat-value" id="statProjects">0</div><div class="stat-description">Project notes</div></div>
+</div>
+<div class="panel">
+<div class="panel-header"><div><h2>Developer Activity</h2><p>Use your notes and tasks to track your progress.</p></div></div>
+<div class="empty-state">Your detailed activity charts will appear here as your diary grows.</div>
+</div>
+</section>
+
+<section id="searchView" class="hidden">
+<section class="page-header">
+<div><p class="eyebrow">KNOWLEDGE BASE</p><h1>Search Notes</h1><p>Search your developer diary by title, content, category or tag.</p></div>
+<div class="header-actions"><button class="button secondary" id="searchBackBtn">Back to Diary</button></div>
+</section>
+<div class="panel">
+<div class="search-bar">
+<input class="search-input" id="searchInput" placeholder="Search notes..." autocomplete="off">
+<button class="button primary" id="performSearchBtn">Search</button>
+</div>
+<div class="search-results" id="searchResults">
+<div class="empty-state">Enter a search term to find your notes.</div>
+</div>
+</div>
+</section>
+
+<section id="adminView" class="hidden">
+<section class="page-header">
+<div><p class="eyebrow">ADMINISTRATION</p><h1>User Management</h1><p>Manage users without accessing their private diary contents.</p></div>
+<div class="header-actions"><button class="button secondary" id="adminBackBtn">Back to Diary</button></div>
+</section>
+<div class="panel">
+<div class="panel-header"><div><h2>Users</h2><p id="adminUserCount">Loading users...</p></div></div>
+<div style="overflow:auto">
+<table class="admin-table">
+<thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+<tbody id="adminUsersTable"></tbody>
+</table>
+</div>
+</div>
+</section>
+</main>
+</div>
+
+<div class="modal-overlay hidden" id="noteModal">
+<div class="modal">
+<div class="modal-header">
+<div><h2 id="noteModalTitle">New Note</h2><p>Create a developer note for the selected date.</p></div>
+<button class="close-button" id="closeNoteModal">×</button>
+</div>
+<div class="modal-body">
+<div class="form-group"><label for="noteTitle">Title</label><input type="text" id="noteTitle" maxlength="200" placeholder="e.g. Learned FastAPI dependency injection"></div>
+<div class="form-row">
+<div class="form-group">
+<label for="noteCategory">Developer Category</label>
+<select id="noteCategory">
+<option value="GENERAL">General</option>
+<option value="LEARNING">Learning</option>
+<option value="BUG">Bug</option>
+<option value="IDEA">Idea</option>
+<option value="CODE">Code</option>
+<option value="MEETING">Meeting</option>
+<option value="PROJECT">Project</option>
+<option value="INTERVIEW">Interview</option>
+<option value="ACHIEVEMENT">Achievement</option>
+<option value="PROBLEM">Problem</option>
+<option value="SOLUTION">Solution</option>
+</select>
+</div>
+<div class="form-group"><label for="noteDate">Date</label><input type="date" id="noteDate"></div>
+</div>
+<div class="category-preview" id="categoryPreview">Category: General</div>
+<div class="form-group"><label for="noteContent">Content</label><textarea id="noteContent" placeholder="Write your notes here..."></textarea></div>
+<div class="form-group"><label for="noteTags">Tags <span class="optional">(optional)</span></label><input type="text" id="noteTags" placeholder="fastapi, python, postgres"><div class="input-help">Separate multiple tags using commas.</div></div>
+<div class="form-group"><label><input type="checkbox" id="notePinned" style="width:auto;margin-right:7px"> Pin this note</label></div>
+<div class="form-group">
+<label for="noteAttachment">Attachments <span class="optional">(save the note first)</span></label>
+<input type="file" id="noteAttachment" multiple title="Select attachment files" aria-label="Select attachment files">
+<div id="attachmentList" style="margin-top:8px"></div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="button secondary" id="cancelNoteBtn">Cancel</button>
+<button class="button primary" id="saveNoteBtn">Save Note</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="taskModal">
+<div class="modal">
+<div class="modal-header">
+<div><h2>New Task</h2><p>Add a task for the selected day.</p></div>
+<button class="close-button" id="closeTaskModal">×</button>
+</div>
+<div class="modal-body">
+<div class="form-group"><label for="taskTitle">Task</label><input type="text" id="taskTitle" maxlength="500" placeholder="e.g. Complete FastAPI authentication"></div>
+<div class="form-group"><label for="taskDate">Date</label><input type="date" id="taskDate"></div>
+</div>
+<div class="modal-footer">
+<button class="button secondary" id="cancelTaskBtn">Cancel</button>
+<button class="button primary" id="saveTaskBtn">Save Task</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="calendarModal">
+<div class="modal">
+<div class="modal-header">
+<div><h2>Select Date</h2><p>Choose any date to view or write your developer diary.</p></div>
+<button class="close-button" id="closeCalendarModal">×</button>
+</div>
+<div class="modal-body">
+<div class="calendar-navigation">
+<button class="navigation-button" id="calendarPreviousMonth">‹</button>
+<strong id="calendarMonthTitle"></strong>
+<button class="navigation-button" id="calendarNextMonth">›</button>
+</div>
+<div class="calendar-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+<div class="calendar-grid" id="calendarGrid"></div>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="historyModal">
+<div class="modal">
+<div class="modal-header">
+<div><h2>Note History</h2><p>Previous versions of this note.</p></div>
+<button class="close-button" id="closeHistoryModal">×</button>
+</div>
+<div class="modal-body"><div class="notes-list" id="historyList"></div></div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="archiveModal">
+<div class="modal">
+<div class="modal-header">
+<div><h2>Archived Notes</h2><p>Your archived developer notes.</p></div>
+<button class="close-button" id="closeArchiveModal">×</button>
+</div>
+<div class="modal-body"><div class="notes-list" id="archiveList"></div></div>
+</div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script>
+const API_BASE="http://127.0.0.1:8000/api";
+let token=localStorage.getItem("developerDiaryToken")||"";
+let currentUser=null;
+let selectedDate=new Date();
+let weekCenter=new Date();
+let calendarDate=new Date();
+let notes=[];
+let tasks=[];
+let editingNoteId=null;
+
+const $=id=>document.getElementById(id);
+
+function dateKey(date){
+    const y=date.getFullYear();
+    const m=String(date.getMonth()+1).padStart(2,"0");
+    const d=String(date.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+}
+
+function parseDate(value){
+    const [y,m,d]=value.split("-").map(Number);
+    return new Date(y,m-1,d);
+}
+
+function sameDate(a,b){return dateKey(a)===dateKey(b)}
+
+function formatLongDate(date){
+    return date.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+}
+
+function formatShortDate(date){
+    return date.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+
+function escapeHtml(value){
+    return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+}
+
+function formatTime(value){
+    if(!value)return"";
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return"";
+    return d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+
+function formatDateTime(value){
+    if(!value)return"";
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return"";
+    return d.toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"});
+}
+
+function showToast(message,type="success"){
+    const toast=document.createElement("div");
+    toast.className=`toast ${type}`;
+    toast.textContent=message;
+    $("toastContainer").appendChild(toast);
+    setTimeout(()=>toast.remove(),3000);
+}
+
+function setAuthScreen(showLogin=true){
+    $("loginForm").classList.toggle("hidden",!showLogin);
+    $("registerForm").classList.toggle("hidden",showLogin);
+    $("loginTab").classList.toggle("active",showLogin);
+    $("registerTab").classList.toggle("active",!showLogin);
+    $("loginError").textContent="";
+    $("registerError").textContent="";
+}
+
+function showApp(){
+    $("authPage").classList.add("hidden");
+    $("appPage").classList.remove("hidden");
+    $("userName").textContent=currentUser?.name||"Developer";
+    $("userBadge").textContent=(currentUser?.name||"D").charAt(0).toUpperCase();
+    if(currentUser?.isAdmin){
+        if(!$("adminBtn")){
+            const button=document.createElement("button");
+            button.id="adminBtn";
+            button.className="button secondary";
+            button.textContent="Admin";
+            $("topbar-actions")?.appendChild(button);
+        }
+    }
+    goDiary();
+}
+
+function showAuth(){
+    $("appPage").classList.add("hidden");
+    $("authPage").classList.remove("hidden");
+    setAuthScreen(true);
+}
+
+async function apiRequest(url,options={}){
+    const headers={...(options.headers||{})};
+    if(!(options.body instanceof FormData))headers["Content-Type"]="application/json";
+    if(token)headers.Authorization=`Bearer ${token}`;
+
+    const response=await fetch(`${API_BASE}${url}`,{...options,headers});
+    const data=await response.json().catch(()=>null);
+
+    if(response.status===401){
+        token="";
+        currentUser=null;
+        localStorage.removeItem("developerDiaryToken");
+        showAuth();
+        throw new Error(data?.detail||"Please sign in again");
+    }
+
+    if(!response.ok)throw new Error(data?.detail||`Request failed with status ${response.status}`);
+    return data;
+}
+
+async function login(email,password){
+    const data=await apiRequest("/auth/login",{method:"POST",body:JSON.stringify({email,password})});
+    token=data.token;
+    currentUser=data.user;
+    localStorage.setItem("developerDiaryToken",token);
+    showApp();
+}
+
+async function register(name,email,password){
+    const data=await apiRequest("/auth/register",{method:"POST",body:JSON.stringify({name,email,password})});
+    token=data.token;
+    currentUser=data.user;
+    localStorage.setItem("developerDiaryToken",token);
+    showApp();
+}
+
+async function checkSession(){
+    if(!token){
+        showAuth();
+        return;
+    }
+
+    try{
+        currentUser=await apiRequest("/auth/me");
+        showApp();
+    }catch(error){
+        token="";
+        localStorage.removeItem("developerDiaryToken");
+        showAuth();
+    }
+}
+
+async function logout(){
+    token="";
+    currentUser=null;
+    localStorage.removeItem("developerDiaryToken");
+    notes=[];
+    tasks=[];
+    showAuth();
+    showToast("Signed out successfully");
+}
+
+async function loadSelectedDate(){
+    try{
+        const key=dateKey(selectedDate);
+        const [loadedNotes,loadedTasks]=await Promise.all([
+            apiRequest(`/notes/date/${key}`),
+            apiRequest(`/tasks/date/${key}`)
+        ]);
+        notes=loadedNotes;
+        tasks=loadedTasks;
+        render();
+    }catch(error){
+        notes=[];
+        tasks=[];
+        render();
+        showToast(error.message,"error");
+    }
+}
+
+function render(){
+    renderHeader();
+    renderWeek();
+    renderNotes();
+    renderTasks();
+}
+
+function renderHeader(){
+    $("pageTitle").textContent=sameDate(selectedDate,new Date())?"Today":formatLongDate(selectedDate);
+    $("selectedDateText").textContent=formatLongDate(selectedDate);
+    $("notesSubtitle").textContent=`Notes for ${formatShortDate(selectedDate)}`;
+    $("tasksSubtitle").textContent=`Tasks for ${formatShortDate(selectedDate)}`;
+}
+
+function renderWeek(){
+    const grid=$("weekGrid");
+    grid.innerHTML="";
+    const center=new Date(weekCenter);
+    center.setHours(0,0,0,0);
+
+    for(let offset=-3;offset<=3;offset++){
+        const day=new Date(center);
+        day.setDate(center.getDate()+offset);
+
+        const card=document.createElement("button");
+        card.className="day-card";
+
+        if(sameDate(day,new Date()))card.classList.add("today");
+        if(sameDate(day,selectedDate))card.classList.add("selected");
+
+        card.innerHTML=`
+            <span class="day-name">${day.toLocaleDateString("en-US",{weekday:"short"})}</span>
+            <span class="day-number">${day.getDate()}</span>
+            <span class="day-month">${day.toLocaleDateString("en-US",{month:"short",year:"numeric"})}</span>
+            ${sameDate(day,new Date())?'<span class="day-today">TODAY</span>':""}
+        `;
+
+        card.addEventListener("click",()=>{
+            selectedDate=new Date(day);
+            weekCenter=new Date(day);
+            loadSelectedDate();
+        });
+
+        grid.appendChild(card);
+    }
+}
+
+function renderNotes(){
+    const list=$("notesList");
+    list.innerHTML="";
+
+    if(!notes.length){
+        list.innerHTML='<div class="empty-state">No notes for this date.<br>Create your first developer note.</div>';
+        return;
+    }
+
+    notes.forEach(note=>{
+        const article=document.createElement("article");
+        article.className="note";
+
+        const category=String(note.category||"GENERAL").toLowerCase();
+        const categoryName=String(note.category||"GENERAL").charAt(0)+String(note.category||"GENERAL").slice(1).toLowerCase();
+
+        const tags=(note.tags||[]).map(tag=>`<span class="tag">#${escapeHtml(tag)}</span>`).join("");
+
+        article.innerHTML=`
+            <div class="note-header">
+                <div class="note-title">${note.isPinned?"📌 ":""}${escapeHtml(note.title)}</div>
+                <span class="note-category category-${category}">${escapeHtml(categoryName)}</span>
+            </div>
+            <div class="note-content">${escapeHtml(note.content)}</div>
+            <div class="note-footer">
+                ${tags}
+                <span class="note-time">${formatTime(note.updatedAt||note.createdAt)}</span>
+                <div class="note-actions">
+                    <button class="note-action pin-note ${note.isPinned?"pin-active":""}">${note.isPinned?"Unpin":"Pin"}</button>
+                    <button class="note-action history-note">History</button>
+                    <button class="note-action archive-note">${note.isArchived?"Restore":"Archive"}</button>
+                    <button class="note-action edit-note">Edit</button>
+                    <button class="note-action delete delete-note">Delete</button>
+                </div>
+            </div>
+        `;
+
+        article.querySelector(".pin-note").addEventListener("click",()=>togglePin(note.id));
+        article.querySelector(".history-note").addEventListener("click",()=>openHistory(note.id));
+        article.querySelector(".archive-note").addEventListener("click",()=>toggleArchive(note.id));
+        article.querySelector(".edit-note").addEventListener("click",()=>openNoteModal(note));
+        article.querySelector(".delete-note").addEventListener("click",()=>deleteNote(note.id));
+
+        list.appendChild(article);
+    });
+}
+
+function renderTasks(){
+    const list=$("taskList");
+    list.innerHTML="";
+
+    const completed=tasks.filter(task=>task.completed).length;
+    const total=tasks.length;
+    const percent=total?Math.round(completed/total*100):0;
+
+    $("taskProgressText").textContent=`${completed} of ${total} completed`;
+    $("taskProgressPercent").textContent=`${percent}%`;
+    $("progressFill").style.width=`${percent}%`;
+
+    if(!tasks.length){
+        list.innerHTML='<div class="empty-state">No tasks for this date.<br>Add a task to get started.</div>';
+        return;
+    }
+
+    tasks.forEach(task=>{
+        const item=document.createElement("div");
+        item.className=`task ${task.completed?"completed":""}`;
+
+        item.innerHTML=`
+            <input type="checkbox" class="task-checkbox" ${task.completed?"checked":""}>
+            <span class="task-title">${escapeHtml(task.title)}</span>
+            <button class="task-delete" aria-label="Delete task">×</button>
+        `;
+
+        item.querySelector(".task-checkbox").addEventListener("change",event=>updateTask(task.id,{completed:event.target.checked}));
+        item.querySelector(".task-delete").addEventListener("click",()=>deleteTask(task.id));
+
+        list.appendChild(item);
+    });
+}
+
+function openNoteModal(note=null){
+    editingNoteId=note?note.id:null;
+
+    $("noteModalTitle").textContent=note?"Edit Note":"New Note";
+    $("noteTitle").value=note?.title||"";
+    $("noteCategory").value=note?.category||"GENERAL";
+    $("noteDate").value=note?.date||dateKey(selectedDate);
+    $("noteContent").value=note?.content||"";
+    $("noteTags").value=(note?.tags||[]).join(", ");
+    $("notePinned").checked=!!note?.isPinned;
+    $("noteAttachment").value="";
+    $("attachmentList").innerHTML="";
+
+    updateCategoryPreview();
+    $("noteModal").classList.remove("hidden");
+
+    setTimeout(()=>$("noteTitle").focus(),50);
+}
+
+function closeNoteModal(){
+    editingNoteId=null;
+    $("noteModal").classList.add("hidden");
+    $("noteTitle").value="";
+    $("noteCategory").value="GENERAL";
+    $("noteDate").value=dateKey(selectedDate);
+    $("noteContent").value="";
+    $("noteTags").value="";
+    $("notePinned").checked=false;
+    $("noteAttachment").value="";
+    $("attachmentList").innerHTML="";
+}
+
+async function saveNote(){
+    const title=$("noteTitle").value.trim();
+    const content=$("noteContent").value.trim();
+    const category=$("noteCategory").value;
+    const noteDate=$("noteDate").value;
+    const tags=$("noteTags").value.split(",").map(tag=>tag.trim()).filter(Boolean);
+    const isPinned=$("notePinned").checked;
+
+    if(!title){
+        showToast("Please enter a note title","error");
+        $("noteTitle").focus();
+        return;
+    }
+
+    if(!content){
+        showToast("Please enter note content","error");
+        $("noteContent").focus();
+        return;
+    }
+
+    if(!noteDate){
+        showToast("Please select a date","error");
+        return;
+    }
+
+    const payload={
+        note_date:noteDate,
+        title,
+        category,
+        content,
+        tags,
+        is_pinned:isPinned
+    };
+
+    $("saveNoteBtn").disabled=true;
+
+    try{
+        let savedNote;
+
+        if(editingNoteId){
+            savedNote=await apiRequest(`/notes/${editingNoteId}`,{
+                method:"PUT",
+                body:JSON.stringify(payload)
+            });
+            showToast("Note updated successfully");
+        }else{
+            savedNote=await apiRequest("/notes",{
+                method:"POST",
+                body:JSON.stringify(payload)
+            });
+            showToast("Note saved successfully");
+        }
+
+        const files=[...$("noteAttachment").files];
+
+        for(const file of files){
+            const formData=new FormData();
+            formData.append("file",file);
+
+            try{
+                await apiRequest(`/notes/${savedNote.id}/attachments`,{
+                    method:"POST",
+                    body:formData
+                });
+            }catch(error){
+                showToast(`Could not upload ${file.name}`,"error");
+            }
+        }
+
+        const newDate=parseDate(noteDate);
+        selectedDate=newDate;
+        weekCenter=newDate;
+
+        closeNoteModal();
+        await loadSelectedDate();
+    }catch(error){
+        showToast(error.message,"error");
+    }finally{
+        $("saveNoteBtn").disabled=false;
+    }
+}
+
+async function deleteNote(id){
+    if(!confirm("Delete this note permanently?"))return;
+
+    try{
+        await apiRequest(`/notes/${id}`,{method:"DELETE"});
+        showToast("Note deleted");
+        await loadSelectedDate();
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function togglePin(id){
+    try{
+        await apiRequest(`/notes/${id}/pin`,{method:"PATCH"});
+        await loadSelectedDate();
+        showToast("Note pin status updated");
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function toggleArchive(id){
+    try{
+        await apiRequest(`/notes/${id}/archive`,{method:"PATCH"});
+        await loadSelectedDate();
+        showToast("Note archive status updated");
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function openHistory(id){
+    try{
+        const history=await apiRequest(`/notes/${id}/history`);
+        const list=$("historyList");
+        list.innerHTML="";
+
+        if(!history.length){
+            list.innerHTML='<div class="empty-state">No previous versions are available yet.</div>';
+        }else{
+            history.forEach(version=>{
+                const item=document.createElement("article");
+                item.className="note";
+                item.innerHTML=`
+                    <div class="note-header">
+                        <div class="note-title">${escapeHtml(version.title)}</div>
+                        <span class="note-category category-${String(version.category).toLowerCase()}">${escapeHtml(version.category)}</span>
+                    </div>
+                    <div class="note-content">${escapeHtml(version.content)}</div>
+                    <div class="note-footer">
+                        ${(version.tags||[]).map(tag=>`<span class="tag">#${escapeHtml(tag)}</span>`).join("")}
+                        <span class="note-time">${formatDateTime(version.createdAt)}</span>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        $("historyModal").classList.remove("hidden");
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function openArchive(){
+    try{
+        const archived=await apiRequest("/notes/archived");
+        const list=$("archiveList");
+        list.innerHTML="";
+
+        if(!archived.length){
+            list.innerHTML='<div class="empty-state">No archived notes.</div>';
+        }else{
+            archived.forEach(note=>{
+                const item=document.createElement("article");
+                item.className="note";
+                item.innerHTML=`
+                    <div class="note-header">
+                        <div class="note-title">${escapeHtml(note.title)}</div>
+                        <span class="note-category category-${String(note.category).toLowerCase()}">${escapeHtml(note.category)}</span>
+                    </div>
+                    <div class="note-content">${escapeHtml(note.content)}</div>
+                    <div class="note-footer">
+                        <span>${formatLongDate(parseDate(note.date))}</span>
+                        <button class="note-action restore-note">Restore</button>
+                    </div>
+                `;
+                item.querySelector(".restore-note").addEventListener("click",async()=>{
+                    await toggleArchive(note.id);
+                    openArchive();
+                });
+                list.appendChild(item);
+            });
+        }
+
+        $("archiveModal").classList.remove("hidden");
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+function openTaskModal(){
+    $("taskTitle").value="";
+    $("taskDate").value=dateKey(selectedDate);
+    $("taskModal").classList.remove("hidden");
+    setTimeout(()=>$("taskTitle").focus(),50);
+}
+
+function closeTaskModal(){
+    $("taskModal").classList.add("hidden");
+    $("taskTitle").value="";
+}
+
+async function saveTask(){
+    const title=$("taskTitle").value.trim();
+    const taskDate=$("taskDate").value;
+
+    if(!title){
+        showToast("Please enter a task","error");
+        $("taskTitle").focus();
+        return;
+    }
+
+    if(!taskDate){
+        showToast("Please select a date","error");
+        return;
+    }
+
+    $("saveTaskBtn").disabled=true;
+
+    try{
+        await apiRequest("/tasks",{
+            method:"POST",
+            body:JSON.stringify({
+                task_date:taskDate,
+                title
+            })
+        });
+
+        const newDate=parseDate(taskDate);
+        selectedDate=newDate;
+        weekCenter=newDate;
+
+        closeTaskModal();
+        showToast("Task added successfully");
+        await loadSelectedDate();
+    }catch(error){
+        showToast(error.message,"error");
+    }finally{
+        $("saveTaskBtn").disabled=false;
+    }
+}
+
+async function updateTask(id,data){
+    try{
+        await apiRequest(`/tasks/${id}`,{
+            method:"PATCH",
+            body:JSON.stringify(data)
+        });
+        await loadSelectedDate();
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function deleteTask(id){
+    if(!confirm("Delete this task?"))return;
+
+    try{
+        await apiRequest(`/tasks/${id}`,{method:"DELETE"});
+        showToast("Task deleted");
+        await loadSelectedDate();
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+function updateCategoryPreview(){
+    const category=$("noteCategory").value;
+    const names={
+        GENERAL:"General",
+        LEARNING:"Learning",
+        BUG:"Bug",
+        IDEA:"Idea",
+        CODE:"Code",
+        MEETING:"Meeting",
+        PROJECT:"Project",
+        INTERVIEW:"Interview",
+        ACHIEVEMENT:"Achievement",
+        PROBLEM:"Problem",
+        SOLUTION:"Solution"
+    };
+    $("categoryPreview").textContent=`Category: ${names[category]||category}`;
+}
+
+function openCalendar(){
+    calendarDate=new Date(selectedDate);
+    renderCalendar();
+    $("calendarModal").classList.remove("hidden");
+}
+
+function closeCalendar(){
+    $("calendarModal").classList.add("hidden");
+}
+
+function renderCalendar(){
+    const year=calendarDate.getFullYear();
+    const month=calendarDate.getMonth();
+
+    $("calendarMonthTitle").textContent=calendarDate.toLocaleDateString("en-US",{month:"long",year:"numeric"});
+
+    const grid=$("calendarGrid");
+    grid.innerHTML="";
+
+    const firstDay=new Date(year,month,1).getDay();
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    const previousMonthDays=new Date(year,month,0).getDate();
+
+    for(let i=0;i<42;i++){
+        let dayNumber=i-firstDay+1;
+        let cellDate;
+        let otherMonth=false;
+
+        if(dayNumber<1){
+            cellDate=new Date(year,month-1,previousMonthDays+dayNumber);
+            otherMonth=true;
+        }else if(dayNumber>daysInMonth){
+            cellDate=new Date(year,month+1,dayNumber-daysInMonth);
+            otherMonth=true;
+        }else{
+            cellDate=new Date(year,month,dayNumber);
+        }
+
+        const button=document.createElement("button");
+        button.className="calendar-day";
+
+        if(otherMonth)button.classList.add("other-month");
+        if(sameDate(cellDate,new Date()))button.classList.add("today");
+        if(sameDate(cellDate,selectedDate))button.classList.add("selected");
+
+        button.textContent=cellDate.getDate();
+
+        button.addEventListener("click",()=>{
+            selectedDate=new Date(cellDate);
+            weekCenter=new Date(cellDate);
+            closeCalendar();
+            loadSelectedDate();
+        });
+
+        grid.appendChild(button);
+    }
+}
+
+function moveWeek(amount){
+    weekCenter.setDate(weekCenter.getDate()+amount*7);
+    selectedDate=new Date(weekCenter);
+    loadSelectedDate();
+}
+
+function goToday(){
+    const today=new Date();
+    selectedDate=new Date(today);
+    weekCenter=new Date(today);
+    goDiary();
+    loadSelectedDate();
+}
+
+function showView(view){
+    $("diaryView").classList.toggle("hidden",view!=="diary");
+    $("dashboardView").classList.toggle("hidden",view!=="dashboard");
+    $("searchView").classList.toggle("hidden",view!=="search");
+    $("adminView").classList.toggle("hidden",view!=="admin");
+}
+
+function goDiary(){
+    showView("diary");
+    loadSelectedDate();
+}
+
+async function openDashboard(){
+    showView("dashboard");
+
+    try{
+        const data=await apiRequest("/dashboard");
+
+        $("statNotes").textContent=data.totalNotes;
+        $("statPinned").textContent=data.pinnedNotes;
+        $("statTasks").textContent=data.totalTasks;
+        $("statCompleted").textContent=data.completedTasks;
+        $("statPending").textContent=data.pendingTasks;
+        $("statLearning").textContent=data.learningNotes;
+        $("statBugs").textContent=data.bugNotes;
+        $("statProjects").textContent=data.projectNotes;
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function performSearch(){
+    const query=$("searchInput").value.trim();
+    const results=$("searchResults");
+
+    if(!query){
+        results.innerHTML='<div class="empty-state">Enter a search term to find your notes.</div>';
+        return;
+    }
+
+    results.innerHTML='<div class="empty-state">Searching...</div>';
+
+    try{
+        const data=await apiRequest(`/notes/search?q=${encodeURIComponent(query)}`);
+
+        if(!data.length){
+            results.innerHTML='<div class="empty-state">No notes found.</div>';
+            return;
+        }
+
+        results.innerHTML="";
+
+        data.forEach(note=>{
+            const item=document.createElement("article");
+            item.className="note";
+
+            item.innerHTML=`
+                <div class="note-header">
+                    <div class="note-title">${note.isPinned?"📌 ":""}${escapeHtml(note.title)}</div>
+                    <span class="note-category category-${String(note.category).toLowerCase()}">${escapeHtml(note.category)}</span>
+                </div>
+                <div class="note-content">${escapeHtml(note.content)}</div>
+                <div class="note-footer">
+                    <span>${formatLongDate(parseDate(note.date))}</span>
+                    ${(note.tags||[]).map(tag=>`<span class="tag">#${escapeHtml(tag)}</span>`).join("")}
+                    <button class="note-action open-search-note">Open</button>
+                </div>
+            `;
+
+            item.querySelector(".open-search-note").addEventListener("click",()=>{
+                selectedDate=parseDate(note.date);
+                weekCenter=new Date(selectedDate);
+                goDiary();
+            });
+
+            results.appendChild(item);
+        });
+    }catch(error){
+        results.innerHTML=`<div class="empty-state">${escapeHtml(error.message)}</div>`;
+    }
+}
+
+async function openAdmin(){
+    if(!currentUser?.isAdmin){
+        showToast("Administrator access required","error");
+        return;
+    }
+
+    showView("admin");
+
+    try{
+        const users=await apiRequest("/admin/users");
+        $("adminUserCount").textContent=`${users.length} registered user${users.length===1?"":"s"}`;
+
+        const table=$("adminUsersTable");
+        table.innerHTML="";
+
+        users.forEach(user=>{
+            const row=document.createElement("tr");
+
+            const joined=user.createdAt?new Date(user.createdAt).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):"";
+
+            row.innerHTML=`
+                <td>${escapeHtml(user.name)}</td>
+                <td>${escapeHtml(user.email)}</td>
+                <td><span class="status-badge ${user.isActive?"status-active":"status-disabled"}">${user.isActive?"Active":"Disabled"}</span></td>
+                <td>${user.isAdmin?"Administrator":"User"}</td>
+                <td>${joined}</td>
+                <td>
+                    ${user.id===currentUser.id
+                        ?"<span style='color:var(--muted);font-size:11px'>Current account</span>"
+                        :`
+                            <button class="note-action status-user">${user.isActive?"Disable":"Enable"}</button>
+                            <button class="note-action delete delete-user">Delete</button>
+                        `
+                    }
+                </td>
+            `;
+
+            if(user.id!==currentUser.id){
+                row.querySelector(".status-user").addEventListener("click",()=>changeUserStatus(user.id,!user.isActive));
+                row.querySelector(".delete-user").addEventListener("click",()=>deleteUser(user.id));
+            }
+
+            table.appendChild(row);
+        });
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function changeUserStatus(id,isActive){
+    const action=isActive?"enable":"disable";
+
+    if(!confirm(`Are you sure you want to ${action} this user?`))return;
+
+    try{
+        await apiRequest(`/admin/users/${id}/status`,{
+            method:"PATCH",
+            body:JSON.stringify({is_active:isActive})
+        });
+
+        showToast(`User ${action}d successfully`);
+        openAdmin();
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+async function deleteUser(id){
+    if(!confirm("Delete this user and all of their diary data permanently?"))return;
+
+    try{
+        await apiRequest(`/admin/users/${id}`,{method:"DELETE"});
+        showToast("User deleted successfully");
+        openAdmin();
+    }catch(error){
+        showToast(error.message,"error");
+    }
+}
+
+$("loginTab").addEventListener("click",()=>setAuthScreen(true));
+$("registerTab").addEventListener("click",()=>setAuthScreen(false));
+
+$("loginFormElement").addEventListener("submit",async event=>{
+    event.preventDefault();
+
+    const email=$("loginEmail").value.trim();
+    const password=$("loginPassword").value;
+
+    $("loginError").textContent="";
+    $("loginSubmit").disabled=true;
+
+    try{
+        await login(email,password);
+    }catch(error){
+        $("loginError").textContent=error.message;
+    }finally{
+        $("loginSubmit").disabled=false;
+    }
+});
+
+$("registerFormElement").addEventListener("submit",async event=>{
+    event.preventDefault();
+
+    const name=$("registerName").value.trim();
+    const email=$("registerEmail").value.trim();
+    const password=$("registerPassword").value;
+    const confirmation=$("registerPasswordConfirm").value;
+
+    $("registerError").textContent="";
+
+    if(password!==confirmation){
+        $("registerError").textContent="Passwords do not match";
+        return;
+    }
+
+    $("registerSubmit").disabled=true;
+
+    try{
+        await register(name,email,password);
+    }catch(error){
+        $("registerError").textContent=error.message;
+    }finally{
+        $("registerSubmit").disabled=false;
+    }
+});
+
+$("googleLoginBtn").addEventListener("click",()=>{
+    window.location.href=`${API_BASE}/auth/google`;
+});
+
+$("googleRegisterBtn").addEventListener("click",()=>{
+    window.location.href=`${API_BASE}/auth/google`;
+});
+
+$("logoutBtn").addEventListener("click",logout);
+$("brandHome").addEventListener("click",event=>{
+    event.preventDefault();
+    goDiary();
+});
+
+$("dashboardBtn").addEventListener("click",openDashboard);
+$("dashboardTodayBtn").addEventListener("click",goDiary);
+$("searchBtn").addEventListener("click",()=>{
+    showView("search");
+    $("searchInput").focus();
+});
+$("searchBackBtn").addEventListener("click",goDiary);
+
+$("calendarBtn").addEventListener("click",openCalendar);
+$("closeCalendarModal").addEventListener("click",closeCalendar);
+
+$("calendarPreviousMonth").addEventListener("click",()=>{
+    calendarDate.setMonth(calendarDate.getMonth()-1);
+    renderCalendar();
+});
+
+$("calendarNextMonth").addEventListener("click",()=>{
+    calendarDate.setMonth(calendarDate.getMonth()+1);
+    renderCalendar();
+});
+
+$("previousWeekBtn").addEventListener("click",()=>moveWeek(-1));
+$("nextWeekBtn").addEventListener("click",()=>moveWeek(1));
+$("todayBtn").addEventListener("click",goToday);
+
+$("newNoteBtn").addEventListener("click",()=>openNoteModal());
+$("panelNewNoteBtn").addEventListener("click",()=>openNoteModal());
+$("closeNoteModal").addEventListener("click",closeNoteModal);
+$("cancelNoteBtn").addEventListener("click",closeNoteModal);
+$("saveNoteBtn").addEventListener("click",saveNote);
+
+$("newTaskBtn").addEventListener("click",openTaskModal);
+$("panelNewTaskBtn").addEventListener("click",openTaskModal);
+$("closeTaskModal").addEventListener("click",closeTaskModal);
+$("cancelTaskBtn").addEventListener("click",closeTaskModal);
+$("saveTaskBtn").addEventListener("click",saveTask);
+
+$("noteCategory").addEventListener("change",updateCategoryPreview);
+
+$("performSearchBtn").addEventListener("click",performSearch);
+
+$("searchInput").addEventListener("keydown",event=>{
+    if(event.key==="Enter")performSearch();
+});
+
+$("closeHistoryModal").addEventListener("click",()=>$("historyModal").classList.add("hidden"));
+
+$("closeArchiveModal").addEventListener("click",()=>$("archiveModal").classList.add("hidden"));
+
+$("noteModal").addEventListener("click",event=>{
+    if(event.target===$("noteModal"))closeNoteModal();
+});
+
+$("taskModal").addEventListener("click",event=>{
+    if(event.target===$("taskModal"))closeTaskModal();
+});
+
+$("calendarModal").addEventListener("click",event=>{
+    if(event.target===$("calendarModal"))closeCalendar();
+});
+
+$("historyModal").addEventListener("click",event=>{
+    if(event.target===$("historyModal"))$("historyModal").classList.add("hidden");
+});
+
+$("archiveModal").addEventListener("click",event=>{
+    if(event.target===$("archiveModal"))$("archiveModal").classList.add("hidden");
+});
+
+document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"){
+        closeNoteModal();
+        closeTaskModal();
+        closeCalendar();
+        $("historyModal").classList.add("hidden");
+        $("archiveModal").classList.add("hidden");
+    }
+});
+
+async function initialize(){
+    const params=new URLSearchParams(window.location.search);
+    const googleToken=params.get("google_token");
+    const googleError=params.get("google_error");
+
+    if(googleToken){
+        token=googleToken;
+        localStorage.setItem("developerDiaryToken",token);
+        window.history.replaceState({},document.title,window.location.pathname);
+    }
+
+    if(googleError){
+        window.history.replaceState({},document.title,window.location.pathname);
+
+        const messages={
+            oauth_failed:"Google authentication was cancelled or failed.",
+            missing_user_info:"Google did not return your account information.",
+            missing_google_data:"Google account information was incomplete.",
+            account_disabled:"Your account is disabled.",
+            google_login_failed:"Google sign-in failed. Please try again."
+        };
+
+        showToast(messages[googleError]||"Google sign-in failed.","error");
+    }
+
+    const today=new Date();
+    selectedDate=new Date(today);
+    weekCenter=new Date(today);
+
+    await checkSession();
+
+    if(currentUser?.isAdmin){
+        const actions=document.querySelector(".topbar-actions");
+
+        if(actions&&!$("adminBtn")){
+            const adminButton=document.createElement("button");
+            adminButton.id="adminBtn";
+            adminButton.className="button secondary";
+            adminButton.textContent="Admin";
+            adminButton.addEventListener("click",openAdmin);
+
+            const calendarButton=$("calendarBtn");
+            actions.insertBefore(adminButton,calendarButton);
+        }
+    }
+}
+
+initialize();
+</script>
+</body>
+</html>
