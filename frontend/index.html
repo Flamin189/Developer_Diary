@@ -78,8 +78,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .panel-header h2{font-size:18px}
 .panel-header p{font-size:12px;color:var(--muted);margin-top:2px}
 .notes-list,.task-list{display:flex;flex-direction:column;gap:10px}
-.note{border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:15px}
-.note-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.note{
+border:1px solid var(--border);
+border-radius:10px;
+background:var(--surface2);
+padding:15px;
+height:235px;
+min-height:235px;
+max-height:235px;
+display:flex;
+flex-direction:column;
+cursor:pointer;
+transition:.2s;
+overflow:hidden
+}
+.note:hover{border-color:#4a5360;transform:translateY(-1px)}
+.note-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-shrink:0}
 .note-title{font-weight:600;font-size:15px}
 .note-category{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:600;white-space:nowrap}
 .category-general{color:#aeb5c2;background:rgba(174,181,194,.08)}
@@ -93,7 +107,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .category-achievement{color:#facc15;background:rgba(250,204,21,.1)}
 .category-problem{color:#fb7185;background:rgba(251,113,133,.1)}
 .category-solution{color:#4ade80;background:rgba(74,222,128,.1)}
-.note-content{white-space:pre-wrap;color:#c7ced8;font-size:13px;margin-top:10px}
+.note-content{
+white-space:pre-wrap;
+color:#c7ced8;
+font-size:13px;
+margin-top:10px;
+display:-webkit-box;
+-webkit-box-orient:vertical;
+-webkit-line-clamp:6;
+overflow:hidden;
+line-height:1.45;
+flex:1
+}
 .note-footer{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:13px;color:var(--muted);font-size:11px}
 .tag{background:var(--surface3);padding:3px 6px;border-radius:5px}
 .note-time{margin-left:auto}
@@ -109,13 +134,26 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .task-list{display:flex;flex-direction:column;gap:8px}
 .task{display:flex;align-items:flex-start;gap:10px;padding:11px;border:1px solid var(--border);background:var(--surface2);border-radius:8px}
 .task-checkbox{width:17px;height:17px;margin-top:2px;accent-color:var(--primary);flex-shrink:0}
-.task-title{flex:1;font-size:13px}
+.task-main{flex:1;min-width:0}.task-title{font-size:13px}.task-description{color:var(--muted);font-size:11px;margin-top:3px;white-space:pre-wrap;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .task.completed .task-title{text-decoration:line-through;color:var(--muted)}
 .task-delete{border:0;background:transparent;color:var(--muted);font-size:16px}
 .task-delete:hover{color:var(--danger)}
 .empty-state{text-align:center;color:var(--muted);padding:40px 15px;font-size:13px;border:1px dashed var(--border);border-radius:9px}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}
 .modal{width:min(650px,100%);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:13px;box-shadow:var(--shadow)}
+.note-editor-modal{
+width:100vw;
+height:100vh;
+max-height:100vh;
+border-radius:0;
+border:0;
+display:flex;
+flex-direction:column
+}
+.note-editor-modal .modal-body{flex:1;overflow:auto}
+.note-editor-modal .modal-footer{flex-shrink:0}
+.note-editor-modal #noteContent{min-height:45vh}
+
 .modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:19px 20px;border-bottom:1px solid var(--border)}
 .modal-header h2{font-size:18px}
 .modal-header p{font-size:12px;color:var(--muted);margin-top:3px}
@@ -164,7 +202,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .toast.error{border-left:3px solid var(--danger)}
 @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:1000px){.week-grid{grid-template-columns:repeat(4,1fr)}.workspace{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:700px){.week-grid{display:flex;overflow-x:auto}.day-card{min-width:145px}.user-name{display:none}.form-row{grid-template-columns:1fr}}
+@media(max-width:700px){.week-grid{display:flex;overflow-x:auto}.day-card{min-width:145px}.user-name{display:none}.form-row{grid-template-columns:1fr}.note{height:225px;min-height:225px;max-height:225px}.note-editor-modal #noteContent{min-height:40vh}}
 </style>
 </head>
 <body>
@@ -376,6 +414,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 </div>
 <div class="modal-body">
 <div class="form-group"><label for="taskTitle">Task</label><input type="text" id="taskTitle" maxlength="500" placeholder="e.g. Complete FastAPI authentication"></div>
+<div class="form-group"><label for="taskDescription">Description <span class="optional">(optional)</span></label><textarea id="taskDescription" maxlength="5000" placeholder="Add extra details, notes or acceptance criteria..."></textarea></div>
 <div class="form-group"><label for="taskDate">Date</label><input type="date" id="taskDate"></div>
 </div>
 <div class="modal-footer">
@@ -461,6 +500,21 @@ function formatShortDate(date){
 
 function escapeHtml(value){
     return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+}
+
+function truncateNoteContent(value,maxLength=260){
+    const text=String(value??"").trim();
+    if(text.length<=maxLength)return text;
+    return text.slice(0,maxLength).trimEnd()+"...";
+}
+
+function formatFileSize(bytes){
+    const value=Number(bytes||0);
+    if(!value)return"";
+    if(value<1024)return`${value} B`;
+    if(value<1024*1024)return`${(value/1024).toFixed(1)} KB`;
+    if(value<1024*1024*1024)return`${(value/(1024*1024)).toFixed(1)} MB`;
+    return`${(value/(1024*1024*1024)).toFixed(1)} GB`;
 }
 
 function formatTime(value){
@@ -661,13 +715,14 @@ function renderNotes(){
         const categoryName=String(note.category||"GENERAL").charAt(0)+String(note.category||"GENERAL").slice(1).toLowerCase();
 
         const tags=(note.tags||[]).map(tag=>`<span class="tag">#${escapeHtml(tag)}</span>`).join("");
+        const preview=truncateNoteContent(note.content,260);
 
         article.innerHTML=`
             <div class="note-header">
                 <div class="note-title">${note.isPinned?"📌 ":""}${escapeHtml(note.title)}</div>
                 <span class="note-category category-${category}">${escapeHtml(categoryName)}</span>
             </div>
-            <div class="note-content">${escapeHtml(note.content)}</div>
+            <div class="note-content">${escapeHtml(preview)}</div>
             <div class="note-footer">
                 ${tags}
                 <span class="note-time">${formatTime(note.updatedAt||note.createdAt)}</span>
@@ -681,11 +736,31 @@ function renderNotes(){
             </div>
         `;
 
-        article.querySelector(".pin-note").addEventListener("click",()=>togglePin(note.id));
-        article.querySelector(".history-note").addEventListener("click",()=>openHistory(note.id));
-        article.querySelector(".archive-note").addEventListener("click",()=>toggleArchive(note.id));
-        article.querySelector(".edit-note").addEventListener("click",()=>openNoteModal(note));
-        article.querySelector(".delete-note").addEventListener("click",()=>deleteNote(note.id));
+        article.addEventListener("click",event=>{
+            if(event.target.closest(".note-action"))return;
+            openNoteEditor(note);
+        });
+
+        article.querySelector(".pin-note").addEventListener("click",event=>{
+            event.stopPropagation();
+            togglePin(note.id);
+        });
+        article.querySelector(".history-note").addEventListener("click",event=>{
+            event.stopPropagation();
+            openHistory(note.id);
+        });
+        article.querySelector(".archive-note").addEventListener("click",event=>{
+            event.stopPropagation();
+            toggleArchive(note.id);
+        });
+        article.querySelector(".edit-note").addEventListener("click",event=>{
+            event.stopPropagation();
+            openNoteEditor(note);
+        });
+        article.querySelector(".delete-note").addEventListener("click",event=>{
+            event.stopPropagation();
+            deleteNote(note.id);
+        });
 
         list.appendChild(article);
     });
@@ -714,7 +789,10 @@ function renderTasks(){
 
         item.innerHTML=`
             <input type="checkbox" class="task-checkbox" ${task.completed?"checked":""}>
-            <span class="task-title">${escapeHtml(task.title)}</span>
+            <div class="task-main">
+                <div class="task-title">${escapeHtml(task.title)}</div>
+                ${task.description?`<div class="task-description">${escapeHtml(task.description)}</div>`:""}
+            </div>
             <button class="task-delete" aria-label="Delete task">×</button>
         `;
 
@@ -723,6 +801,10 @@ function renderTasks(){
 
         list.appendChild(item);
     });
+}
+
+function openNoteEditor(note){
+    openNoteModal(note);
 }
 
 function openNoteModal(note=null){
@@ -739,13 +821,18 @@ function openNoteModal(note=null){
     $("attachmentList").innerHTML="";
 
     updateCategoryPreview();
+
+    $("noteModal").querySelector(".modal").classList.add("note-editor-modal");
     $("noteModal").classList.remove("hidden");
+
+    if(note)loadAttachments(note.id);
 
     setTimeout(()=>$("noteTitle").focus(),50);
 }
 
 function closeNoteModal(){
     editingNoteId=null;
+    $("noteModal").querySelector(".modal").classList.remove("note-editor-modal");
     $("noteModal").classList.add("hidden");
     $("noteTitle").value="";
     $("noteCategory").value="GENERAL";
@@ -755,6 +842,60 @@ function closeNoteModal(){
     $("notePinned").checked=false;
     $("noteAttachment").value="";
     $("attachmentList").innerHTML="";
+}
+
+async function loadAttachments(noteId){
+    const list=$("attachmentList");
+    list.innerHTML='<div class="input-help">Loading attachments...</div>';
+
+    try{
+        const attachments=await apiRequest(`/notes/${noteId}/attachments`);
+
+        if(!attachments.length){
+            list.innerHTML='<div class="input-help">No attachments yet.</div>';
+            return;
+        }
+
+        list.innerHTML="";
+
+        attachments.forEach(attachment=>{
+            const row=document.createElement("div");
+            row.style.cssText="display:flex;align-items:center;gap:8px;margin-top:6px;padding:7px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:7px";
+
+            const link=document.createElement("a");
+            link.href=attachment.url||"#";
+            link.target="_blank";
+            link.rel="noopener";
+            link.textContent=attachment.fileName;
+            link.style.cssText="color:var(--primary);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1";
+
+            const size=document.createElement("span");
+            size.className="input-help";
+            size.textContent=formatFileSize(attachment.fileSize);
+
+            const remove=document.createElement("button");
+            remove.className="note-action delete";
+            remove.textContent="Delete";
+            remove.addEventListener("click",async()=>{
+                if(!confirm(`Delete ${attachment.fileName}?`))return;
+
+                try{
+                    await apiRequest(`/attachments/${attachment.id}`,{method:"DELETE"});
+                    showToast("Attachment deleted");
+                    loadAttachments(noteId);
+                }catch(error){
+                    showToast(error.message,"error");
+                }
+            });
+
+            row.appendChild(link);
+            row.appendChild(size);
+            row.appendChild(remove);
+            list.appendChild(row);
+        });
+    }catch(error){
+        list.innerHTML=`<div class="input-help">${escapeHtml(error.message)}</div>`;
+    }
 }
 
 async function saveNote(){
@@ -943,6 +1084,7 @@ async function openArchive(){
 
 function openTaskModal(){
     $("taskTitle").value="";
+    $("taskDescription").value="";
     $("taskDate").value=dateKey(selectedDate);
     $("taskModal").classList.remove("hidden");
     setTimeout(()=>$("taskTitle").focus(),50);
@@ -951,10 +1093,12 @@ function openTaskModal(){
 function closeTaskModal(){
     $("taskModal").classList.add("hidden");
     $("taskTitle").value="";
+    $("taskDescription").value="";
 }
 
 async function saveTask(){
     const title=$("taskTitle").value.trim();
+    const description=$("taskDescription").value.trim();
     const taskDate=$("taskDate").value;
 
     if(!title){
@@ -975,7 +1119,8 @@ async function saveTask(){
             method:"POST",
             body:JSON.stringify({
                 task_date:taskDate,
-                title
+                title,
+                description:description||null
             })
         });
 
@@ -1168,7 +1313,7 @@ async function performSearch(){
                     <div class="note-title">${note.isPinned?"📌 ":""}${escapeHtml(note.title)}</div>
                     <span class="note-category category-${String(note.category).toLowerCase()}">${escapeHtml(note.category)}</span>
                 </div>
-                <div class="note-content">${escapeHtml(note.content)}</div>
+                <div class="note-content">${escapeHtml(truncateNoteContent(note.content,260))}</div>
                 <div class="note-footer">
                     <span>${formatLongDate(parseDate(note.date))}</span>
                     ${(note.tags||[]).map(tag=>`<span class="tag">#${escapeHtml(tag)}</span>`).join("")}
@@ -1180,6 +1325,7 @@ async function performSearch(){
                 selectedDate=parseDate(note.date);
                 weekCenter=new Date(selectedDate);
                 goDiary();
+                setTimeout(()=>openNoteEditor(note),100);
             });
 
             results.appendChild(item);
@@ -1336,6 +1482,9 @@ $("searchBtn").addEventListener("click",()=>{
     $("searchInput").focus();
 });
 $("searchBackBtn").addEventListener("click",goDiary);
+$("searchInput").addEventListener("keydown",event=>{
+    if(event.key==="Enter")performSearch();
+});
 
 $("calendarBtn").addEventListener("click",openCalendar);
 $("closeCalendarModal").addEventListener("click",closeCalendar);

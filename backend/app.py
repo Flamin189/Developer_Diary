@@ -3,6 +3,10 @@ import hmac
 import hashlib
 import base64
 import secrets
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import date,datetime,timedelta
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -36,6 +40,15 @@ FRONTEND_URL=os.getenv(
 # https://developer-diary.onrender.com/api/auth/google/callback
 GOOGLE_REDIRECT_URI=os.getenv("GOOGLE_REDIRECT_URI","").strip()
 
+# Supabase Storage configuration.
+# Keep the service-role key ONLY in Render/local backend environment variables.
+SUPABASE_URL=os.getenv("SUPABASE_URL","").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY=os.getenv("SUPABASE_SERVICE_ROLE_KEY","").strip()
+SUPABASE_STORAGE_BUCKET=os.getenv(
+    "SUPABASE_STORAGE_BUCKET",
+    "developer-diary-attachments"
+).strip()
+
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is missing from environment variables")
 
@@ -45,9 +58,6 @@ if not SECRET_KEY or SECRET_KEY=="developer-diary-development-secret":
 
 engine=create_engine(DATABASE_URL,pool_pre_ping=True)
 SessionLocal=sessionmaker(bind=engine,autoflush=False,autocommit=False)
-
-UPLOAD_DIR=Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
 
 config=Config(".env")
 oauth=OAuth(config)
@@ -95,6 +105,7 @@ class Task(Base):
     user_id:Mapped[int]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False,index=True)
     task_date:Mapped[date]=mapped_column(Date,nullable=False,index=True)
     title:Mapped[str]=mapped_column(String(500),nullable=False)
+    description:Mapped[str|None]=mapped_column(Text,nullable=True)
     completed:Mapped[bool]=mapped_column(Boolean,nullable=False,default=False)
     created_at:Mapped[datetime]=mapped_column(DateTime,nullable=False,server_default=func.now())
     updated_at:Mapped[datetime]=mapped_column(DateTime,nullable=False,server_default=func.now(),onupdate=func.now())
@@ -148,10 +159,12 @@ class NoteUpdate(BaseModel):
 class TaskCreate(BaseModel):
     task_date:date
     title:str=Field(...,min_length=1,max_length=500)
+    description:str|None=Field(None,max_length=5000)
 
 class TaskUpdate(BaseModel):
     task_date:date|None=None
     title:str|None=Field(None,min_length=1,max_length=500)
+    description:str|None=Field(None,max_length=5000)
     completed:bool|None=None
 
 class AdminStatusRequest(BaseModel):
@@ -252,24 +265,160 @@ def task_response(task:Task):
         "id":task.id,
         "date":task.task_date,
         "title":task.title,
+        "description":task.description or "",
         "completed":task.completed,
         "createdAt":task.created_at,
         "updatedAt":task.updated_at
     }
 
 def attachment_response(attachment:Attachment):
+    url=None
+
+    try:
+        url=storage_signed_url(attachment.file_path)
+    except Exception as error:
+        print("Attachment signed URL error:",error)
+
     return {
         "id":attachment.id,
         "noteId":attachment.note_id,
         "fileName":attachment.file_name,
         "fileType":attachment.file_type,
         "fileSize":attachment.file_size,
-        "createdAt":attachment.created_at
+        "createdAt":attachment.created_at,
+        "url":url
     }
+
+
+def _storage_headers(content_type:str|None=None):
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise RuntimeError(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured "
+            "for attachment storage"
+        )
+
+    headers={
+        "Authorization":f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "apikey":SUPABASE_SERVICE_ROLE_KEY,
+    }
+
+    if content_type:
+        headers["Content-Type"]=content_type
+
+    return headers
+
+
+def _storage_request(method:str,path:str,body:bytes|None=None,content_type:str|None=None):
+    request=urllib.request.Request(
+        f"{SUPABASE_URL}/storage/v1/{path.lstrip('/')}",
+        data=body,
+        headers=_storage_headers(content_type),
+        method=method,
+    )
+
+    try:
+        with urllib.request.urlopen(request,timeout=60) as response:
+            return response.status,response.read()
+    except urllib.error.HTTPError as error:
+        detail=error.read().decode("utf-8","replace")
+        raise RuntimeError(
+            f"Supabase Storage request failed ({error.code}): {detail}"
+        ) from error
+    except urllib.error.URLError as error:
+        raise RuntimeError(
+            f"Could not reach Supabase Storage: {error.reason}"
+        ) from error
+
+
+def ensure_storage_bucket():
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        print(
+            "WARNING: Supabase Storage is not configured. "
+            "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+        )
+        return
+
+    bucket_id=urllib.parse.quote(SUPABASE_STORAGE_BUCKET,safe="")
+
+    try:
+        _storage_request("GET",f"bucket/{bucket_id}")
+        return
+    except RuntimeError as error:
+        if "404" not in str(error):
+            print("Supabase Storage bucket check failed:",error)
+            return
+
+    payload=json.dumps({
+        "id":SUPABASE_STORAGE_BUCKET,
+        "name":SUPABASE_STORAGE_BUCKET,
+        "public":False,
+    }).encode("utf-8")
+
+    try:
+        _storage_request("POST","bucket/",payload,"application/json")
+        print(f"Created Supabase Storage bucket: {SUPABASE_STORAGE_BUCKET}")
+    except RuntimeError as error:
+        if "already exists" not in str(error).lower():
+            print("Supabase Storage bucket creation failed:",error)
+
+
+def _encoded_storage_path(object_path:str):
+    return "/".join(
+        urllib.parse.quote(part,safe="")
+        for part in object_path.split("/")
+    )
+
+
+def storage_upload(object_path:str,content:bytes,content_type:str|None):
+    bucket=urllib.parse.quote(SUPABASE_STORAGE_BUCKET,safe="")
+    _storage_request(
+        "POST",
+        f"object/{bucket}/{_encoded_storage_path(object_path)}",
+        content,
+        content_type or "application/octet-stream",
+    )
+
+
+def storage_delete(object_path:str):
+    bucket=urllib.parse.quote(SUPABASE_STORAGE_BUCKET,safe="")
+    _storage_request(
+        "DELETE",
+        f"object/{bucket}/{_encoded_storage_path(object_path)}"
+    )
+
+
+def storage_signed_url(object_path:str,expires_in:int=3600)->str:
+    bucket=urllib.parse.quote(SUPABASE_STORAGE_BUCKET,safe="")
+    payload=json.dumps({"expiresIn":expires_in}).encode("utf-8")
+
+    _,raw=_storage_request(
+        "POST",
+        f"object/sign/{bucket}/{_encoded_storage_path(object_path)}",
+        payload,
+        "application/json",
+    )
+
+    data=json.loads(raw.decode("utf-8"))
+    signed=data.get("signedURL") or data.get("signedUrl")
+
+    if not signed:
+        raise RuntimeError(f"Supabase Storage did not return a signed URL: {data}")
+
+    return signed if signed.startswith("http") else f"{SUPABASE_URL}/storage/v1{signed}"
+
+
+def migrate_database_schema():
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS description TEXT"
+        )
+
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     Base.metadata.create_all(bind=engine)
+    migrate_database_schema()
+    ensure_storage_bucket()
     yield
 
 app=FastAPI(title="Developer Diary API",version="2.0.0",lifespan=lifespan)
@@ -467,6 +616,28 @@ def get_notes(note_date:date,db:Session=Depends(get_db),user:User=Depends(get_cu
 
     return [note_response(note) for note in notes]
 
+@app.get("/api/notes/search")
+def search_notes(q:str,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
+    query=q.strip()
+
+    if not query:
+        return []
+
+    pattern=f"%{query}%"
+
+    notes=db.query(Note).filter(
+        Note.user_id==user.id,
+        Note.is_archived==False,
+        or_(
+            Note.title.ilike(pattern),
+            Note.content.ilike(pattern),
+            Note.tags.ilike(pattern),
+            Note.category.ilike(pattern)
+        )
+    ).order_by(Note.updated_at.desc()).all()
+
+    return [note_response(note) for note in notes]
+
 @app.get("/api/notes/{note_id}")
 def get_note(note_id:int,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
     note=db.query(Note).filter(
@@ -599,28 +770,6 @@ def get_archived_notes(db:Session=Depends(get_db),user:User=Depends(get_current_
 
     return [note_response(note) for note in notes]
 
-@app.get("/api/notes/search")
-def search_notes(q:str,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
-    query=q.strip()
-
-    if not query:
-        return []
-
-    pattern=f"%{query}%"
-
-    notes=db.query(Note).filter(
-        Note.user_id==user.id,
-        Note.is_archived==False,
-        or_(
-            Note.title.ilike(pattern),
-            Note.content.ilike(pattern),
-            Note.tags.ilike(pattern),
-            Note.category.ilike(pattern)
-        )
-    ).order_by(Note.updated_at.desc()).all()
-
-    return [note_response(note) for note in notes]
-
 @app.get("/api/notes/{note_id}/history")
 def get_note_history(note_id:int,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
     note=db.query(Note).filter(
@@ -650,6 +799,23 @@ def get_note_history(note_id:int,db:Session=Depends(get_db),user:User=Depends(ge
 
 @app.get("/api/tasks/date/{task_date}")
 def get_tasks(task_date:date,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
+    # When today's diary is opened, unfinished tasks from older dates are
+    # carried forward to today. This is idempotent and creates no duplicates.
+    today=date.today()
+
+    if task_date==today:
+        overdue_tasks=db.query(Task).filter(
+            Task.user_id==user.id,
+            Task.task_date<today,
+            Task.completed==False
+        ).all()
+
+        for task in overdue_tasks:
+            task.task_date=today
+
+        if overdue_tasks:
+            db.commit()
+
     tasks=db.query(Task).filter(
         Task.user_id==user.id,
         Task.task_date==task_date
@@ -675,6 +841,7 @@ def create_task(data:TaskCreate,db:Session=Depends(get_db),user:User=Depends(get
         user_id=user.id,
         task_date=data.task_date,
         title=data.title.strip(),
+        description=data.description.strip() if data.description else None,
         completed=False
     )
 
@@ -699,6 +866,9 @@ def update_task(task_id:int,data:TaskUpdate,db:Session=Depends(get_db),user:User
 
     if data.title is not None:
         task.title=data.title.strip()
+
+    if data.description is not None:
+        task.description=data.description.strip() or None
 
     if data.completed is not None:
         task.completed=data.completed
@@ -786,22 +956,36 @@ async def upload_attachment(note_id:int,file:UploadFile=File(...),db:Session=Dep
 
     safe_name=Path(file.filename or "file").name
     unique_name=f"{secrets.token_hex(12)}_{safe_name}"
-    destination=UPLOAD_DIR/unique_name
-
+    object_path=f"user_{user.id}/note_{note.id}/{unique_name}"
     content=await file.read()
-    destination.write_bytes(content)
+
+    try:
+        storage_upload(object_path,content,file.content_type)
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Attachment storage failed: {error}"
+        )
 
     attachment=Attachment(
         note_id=note.id,
         file_name=safe_name,
-        file_path=str(destination),
+        file_path=object_path,
         file_type=file.content_type,
         file_size=len(content)
     )
 
-    db.add(attachment)
-    db.commit()
-    db.refresh(attachment)
+    try:
+        db.add(attachment)
+        db.commit()
+        db.refresh(attachment)
+    except Exception:
+        db.rollback()
+        try:
+            storage_delete(object_path)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500,detail="Attachment metadata could not be saved")
 
     return attachment_response(attachment)
 
@@ -833,10 +1017,13 @@ def delete_attachment(attachment_id:int,db:Session=Depends(get_db),user:User=Dep
     if not attachment:
         raise HTTPException(status_code=404,detail="Attachment not found")
 
-    path=Path(attachment.file_path)
-
-    if path.exists():
-        path.unlink()
+    try:
+        storage_delete(attachment.file_path)
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Attachment storage deletion failed: {error}"
+        )
 
     db.delete(attachment)
     db.commit()
